@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "catest.fullname" . }}-cluster-autoscaler
+  labels:
+    app: cluster-autoscaler
+  {{- include "catest.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.clusterAutoscaler.replicas }}
+  selector:
+    matchLabels:
+      app: cluster-autoscaler
+    {{- include "catest.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        app: cluster-autoscaler
+      {{- include "catest.selectorLabels" . | nindent 8 }}
+      annotations:
+        prometheus.io/port: "8085"
+        prometheus.io/scrape: "true"
+    spec:
+      containers:
+      - command:
+        - ./cluster-autoscaler
+        - --v=4
+        - --stderrthreshold=info
+        - --cloud-provider=aws
+        - --skip-nodes-with-local-storage=false
+        - --expander=least-waste
+        - --node-group-auto-discovery=asg:tag=k8s.io/cluster-autoscaler/enabled,k8s.io/cluster-autoscaler/tf-mts-cluster-dev
+        env:
+        - name: KUBERNETES_CLUSTER_DOMAIN
+          value: {{ quote .Values.kubernetesClusterDomain }}
+        image: {{ .Values.clusterAutoscaler.clusterAutoscaler.image.repository }}:{{ .Values.clusterAutoscaler.clusterAutoscaler.image.tag
+          | default .Chart.AppVersion }}
+        imagePullPolicy: {{ .Values.clusterAutoscaler.clusterAutoscaler.imagePullPolicy
+          }}
+        name: cluster-autoscaler
+        resources: {{- toYaml .Values.clusterAutoscaler.clusterAutoscaler.resources | nindent
+          10 }}
+      priorityClassName: system-cluster-critical
+      securityContext:
+        fsGroup: 65534
+        runAsNonRoot: true
+        runAsUser: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      serviceAccountName: {{ include "catest.fullname" . }}-cluster-autoscaler

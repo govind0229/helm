@@ -1,0 +1,17 @@
+clusterAutoscaler:
+  clusterAutoscaler:
+    image:
+      repository: k8s.gcr.io/autoscaling/cluster-autoscaler
+      tag: v1.26.2
+    imagePullPolicy: Always
+    resources:
+      limits:
+        cpu: 100m
+        memory: 600Mi
+      requests:
+        cpu: 100m
+        memory: 600Mi
+  replicas: 1
+  serviceAccount:
+    annotations: {}
+kubernetesClusterDomain: cluster.local
